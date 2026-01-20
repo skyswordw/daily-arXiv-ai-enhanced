@@ -6,10 +6,12 @@ import re
 class ArxivSpider(scrapy.Spider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        categories = os.environ.get("CATEGORIES", "cs.CV")
-        categories = categories.split(",")
+        categories_env = os.environ.get("CATEGORIES", "").strip()
+        if not categories_env:
+            categories_env = "cs.CV"
+        categories = [cat.strip() for cat in categories_env.split(",") if cat.strip()]
         # 保存目标分类列表，用于后续验证
-        self.target_categories = set(map(str.strip, categories))
+        self.target_categories = set(categories)
         self.start_urls = [
             f"https://arxiv.org/list/{cat}/new" for cat in self.target_categories
         ]  # 起始URL（计算机科学领域的最新论文）
