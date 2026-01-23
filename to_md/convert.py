@@ -8,8 +8,10 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=str, help="Path to the jsonline file")
     args = parser.parse_args()
     data = []
-    preference = os.environ.get('CATEGORIES', 'cs.CV, cs.CL').split(',')
-    preference = list(map(lambda x: x.strip(), preference))
+    categories_env = os.environ.get('CATEGORIES', '').strip()
+    if not categories_env:
+        categories_env = 'cs.CV, cs.CL'
+    preference = [cat.strip() for cat in categories_env.split(',') if cat.strip()]
     def rank(cate):
         if cate in preference:
             return preference.index(cate)

@@ -12,13 +12,13 @@ const DATA_CONFIG = {
      * GitHub repository owner (username)
      * This will be replaced during GitHub Actions workflow execution
      */
-    repoOwner: 'dw-dengwei',
+    repoOwner: 'PLACEHOLDER_REPO_OWNER',
 
     /**
      * GitHub repository name
      * This will be replaced during GitHub Actions workflow execution
      */
-    repoName: 'daily-arXiv-ai-enhanced',
+    repoName: 'PLACEHOLDER_REPO_NAME',
 
     /**
      * Data branch name
@@ -27,11 +27,22 @@ const DATA_CONFIG = {
     dataBranch: 'data',
 
     /**
+     * Get the base URLs for fetching data files
+     * @returns {string[]} Base URLs for data files
+     */
+    getDataBaseUrls: function() {
+        return [
+            `https://raw.githubusercontent.com/${this.repoOwner}/${this.repoName}/${this.dataBranch}`,
+            `https://cdn.jsdelivr.net/gh/${this.repoOwner}/${this.repoName}@${this.dataBranch}`
+        ];
+    },
+
+    /**
      * Get the base URL for raw GitHub content from data branch
      * @returns {string} Base URL for raw GitHub content
      */
     getDataBaseUrl: function() {
-        return `https://raw.githubusercontent.com/${this.repoOwner}/${this.repoName}/${this.dataBranch}`;
+        return this.getDataBaseUrls()[0];
     },
 
     /**
@@ -41,6 +52,14 @@ const DATA_CONFIG = {
      */
     getDataUrl: function(filePath) {
         return `${this.getDataBaseUrl()}/${filePath}`;
+    },
+
+    /**
+     * Get candidate URLs for a data file (primary + fallback CDNs)
+     * @param {string} filePath - Relative path to the data file
+     * @returns {string[]} Candidate URLs
+     */
+    getDataUrls: function(filePath) {
+        return this.getDataBaseUrls().map(baseUrl => `${baseUrl}/${filePath}`);
     }
 };
-
