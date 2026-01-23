@@ -31,10 +31,35 @@ const DATA_CONFIG = {
      * @returns {string[]} Base URLs for data files
      */
     getDataBaseUrls: function() {
+        const resolved = this.getResolvedRepoInfo();
         return [
-            `https://raw.githubusercontent.com/${this.repoOwner}/${this.repoName}/${this.dataBranch}`,
-            `https://cdn.jsdelivr.net/gh/${this.repoOwner}/${this.repoName}@${this.dataBranch}`
+            `https://raw.githubusercontent.com/${resolved.repoOwner}/${resolved.repoName}/${this.dataBranch}`,
+            `https://cdn.jsdelivr.net/gh/${resolved.repoOwner}/${resolved.repoName}@${this.dataBranch}`
         ];
+    },
+
+    /**
+     * Resolve repository info at runtime when placeholders are present.
+     * @returns {{repoOwner: string, repoName: string}}
+     */
+    getResolvedRepoInfo: function() {
+        const hasPlaceholders = this.repoOwner === 'PLACEHOLDER_REPO_OWNER' ||
+            this.repoName === 'PLACEHOLDER_REPO_NAME';
+
+        if (!hasPlaceholders || typeof window === 'undefined') {
+            return { repoOwner: this.repoOwner, repoName: this.repoName };
+        }
+
+        const hostParts = window.location.hostname.split('.');
+        const repoOwner = hostParts[0];
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const repoName = pathParts[0];
+
+        if (repoOwner && repoName) {
+            return { repoOwner, repoName };
+        }
+
+        return { repoOwner: this.repoOwner, repoName: this.repoName };
     },
 
     /**
