@@ -178,6 +178,27 @@ jobs:
           esac
         fi
 
+    - name: Summary
+      run: |
+        if [ "${{ steps.dedup_check.outputs.has_new_content }}" = "true" ]; then
+          echo "✅ 工作流完成：去重发现新内容并成功处理 / Workflow completed: Smart deduplication found new content and processed successfully"
+        else
+          case "${{ steps.dedup_check.outputs.skip_reason }}" in
+            "no_new_content")
+              echo "ℹ️ 工作流完成：去重后无新内容 / Workflow completed: No new content after smart deduplication"
+              ;;
+            "processing_error")
+              echo "⚠️ 工作流完成：去重处理出错 / Workflow completed: Deduplication processing error"
+              ;;
+            "unknown_error")
+              echo "⚠️ 工作流完成：未知错误 / Workflow completed: Unknown error"
+              ;;
+            *)
+              echo "ℹ️ 工作流完成：未知原因跳过处理 / Workflow completed: Skipped for unknown reason"
+              ;;
+          esac
+        fi
+
     - name: Prepare data files for data branch
       if: steps.dedup_check.outputs.has_new_content == 'true'
       run: |
