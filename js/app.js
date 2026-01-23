@@ -529,15 +529,35 @@ function selectLanguageForDate(date, preferredLanguage = null) {
   return availableLanguages.includes('Chinese') ? 'Chinese' : availableLanguages[0];
 }
 
+async function fetchWithFallback(urls, options = {}) {
+  let lastError;
+  let lastResponse;
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) {
+        return response;
+      }
+      lastResponse = response;
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastResponse) {
+    return lastResponse;
+  }
+
+  throw lastError || new Error('Failed to fetch data');
+}
+
 async function fetchAvailableDates() {
   try {
     // 从 data 分支获取文件列表
-    const fileListUrl = DATA_CONFIG.getDataUrl('assets/file-list.txt');
-    const response = await fetch(fileListUrl);
-    if (!response.ok) {
-      console.error('Error fetching file list:', response.status);
-      return [];
-    }
+    const fileListUrls = DATA_CONFIG.getDataUrls('assets/file-list.txt');
+    const response = await fetchWithFallback(fileListUrls);
     const text = await response.text();
     const files = text.trim().split('\n');
 
@@ -662,8 +682,8 @@ async function loadPapersByDate(date) {
   try {
     const selectedLanguage = selectLanguageForDate(date);
     // 从 data 分支获取数据文件
-    const dataUrl = DATA_CONFIG.getDataUrl(`data/${date}_AI_enhanced_${selectedLanguage}.jsonl`);
-    const response = await fetch(dataUrl);
+    const dataUrls = DATA_CONFIG.getDataUrls(`data/${date}_AI_enhanced_${selectedLanguage}.jsonl`);
+    const response = await fetchWithFallback(dataUrls);
     // 如果文件不存在（例如返回 404），在论文展示区域提示没有论文
     if (!response.ok) {
       if (response.status === 404) {
@@ -1511,8 +1531,11 @@ async function loadPapersByDateRange(startDate, endDate) {
     for (const date of validDatesInRange) {
       const selectedLanguage = selectLanguageForDate(date);
       // 从 data 分支获取数据文件
-      const dataUrl = DATA_CONFIG.getDataUrl(`data/${date}_AI_enhanced_${selectedLanguage}.jsonl`);
-      const response = await fetch(dataUrl);
+      const dataUrls = DATA_CONFIG.getDataUrls(`data/${date}_AI_enhanced_${selectedLanguage}.jsonl`);
+      const response = await fetchWithFallback(dataUrls);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       const text = await response.text();
       const dataPapers = parseJsonlData(text, date);
       

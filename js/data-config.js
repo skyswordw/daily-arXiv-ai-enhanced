@@ -12,13 +12,13 @@ const DATA_CONFIG = {
      * GitHub repository owner (username)
      * This will be replaced during GitHub Actions workflow execution
      */
-    repoOwner: 'skyswordw',
+    repoOwner: 'PLACEHOLDER_REPO_OWNER',
 
     /**
      * GitHub repository name
      * This will be replaced during GitHub Actions workflow execution
      */
-    repoName: 'daily-arXiv-ai-enhanced',
+    repoName: 'PLACEHOLDER_REPO_NAME',
 
     /**
      * Data branch name
@@ -27,11 +27,47 @@ const DATA_CONFIG = {
     dataBranch: 'data',
 
     /**
+     * Get the base URLs for fetching data files
+     * @returns {string[]} Base URLs for data files
+     */
+    getDataBaseUrls: function() {
+        const resolved = this.getResolvedRepoInfo();
+        return [
+            `https://raw.githubusercontent.com/${resolved.repoOwner}/${resolved.repoName}/${this.dataBranch}`,
+            `https://cdn.jsdelivr.net/gh/${resolved.repoOwner}/${resolved.repoName}@${this.dataBranch}`
+        ];
+    },
+
+    /**
+     * Resolve repository info at runtime when placeholders are present.
+     * @returns {{repoOwner: string, repoName: string}}
+     */
+    getResolvedRepoInfo: function() {
+        const hasPlaceholders = this.repoOwner === 'PLACEHOLDER_REPO_OWNER' ||
+            this.repoName === 'PLACEHOLDER_REPO_NAME';
+
+        if (!hasPlaceholders || typeof window === 'undefined') {
+            return { repoOwner: this.repoOwner, repoName: this.repoName };
+        }
+
+        const hostParts = window.location.hostname.split('.');
+        const repoOwner = hostParts[0];
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const repoName = pathParts[0];
+
+        if (repoOwner && repoName) {
+            return { repoOwner, repoName };
+        }
+
+        return { repoOwner: this.repoOwner, repoName: this.repoName };
+    },
+
+    /**
      * Get the base URL for raw GitHub content from data branch
      * @returns {string} Base URL for raw GitHub content
      */
     getDataBaseUrl: function() {
-        return `https://raw.githubusercontent.com/${this.repoOwner}/${this.repoName}/${this.dataBranch}`;
+        return this.getDataBaseUrls()[0];
     },
 
     /**
@@ -41,5 +77,14 @@ const DATA_CONFIG = {
      */
     getDataUrl: function(filePath) {
         return `${this.getDataBaseUrl()}/${filePath}`;
+    },
+
+    /**
+     * Get candidate URLs for a data file (primary + fallback CDNs)
+     * @param {string} filePath - Relative path to the data file
+     * @returns {string[]} Candidate URLs
+     */
+    getDataUrls: function(filePath) {
+        return this.getDataBaseUrls().map(baseUrl => `${baseUrl}/${filePath}`);
     }
 };
